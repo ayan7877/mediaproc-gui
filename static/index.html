@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MediaProc GUI</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#0f0f0f;--bg1:#161616;--bg2:#1e1e1e;--bg3:#272727;--bg4:#303030;
+  --border:#2e2e2e;--border2:#3a3a3a;
+  --text0:#f0f0f0;--text1:#b0b0b0;--text2:#707070;--text3:#484848;
+  --accent:#3a86ff;--success:#3ecf8e;--error:#f06565;--warn:#f0b429;
+  --mono:'SF Mono','Fira Code',Consolas,monospace;
+  --sans:'Inter','Helvetica Neue',system-ui,sans-serif;
+  --r:6px;--rl:10px;
+}
+html,body{height:100%;background:var(--bg0);color:var(--text0);font-family:var(--sans);font-size:13px;line-height:1.5;overflow:hidden}
+button,select,input,textarea{font-family:var(--sans)}
+button{cursor:pointer;border:none;background:none}
+a{color:var(--accent);text-decoration:none}
+
+/* ─── App shell ─── */
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ─── Sidebar ─── */
+.sidebar{width:220px;flex-shrink:0;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.brand{display:flex;align-items:center;gap:10px;padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.brand-logo{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;flex-shrink:0}
+.brand-name{font-weight:600;font-size:14px;color:var(--text0)}
+.sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto}
+.nav-section{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:0 8px;margin:10px 0 4px;display:block}
+.nav-plugin-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:var(--r);font-size:13px;color:var(--text1);text-align:left;transition:background .1s,color .1s}
+.nav-plugin-btn:hover{background:var(--bg3);color:var(--text0)}
+.nav-plugin-btn.active{background:var(--bg3);color:var(--text0);font-weight:500}
+.nav-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.nav-commands{padding-left:24px;margin:2px 0 4px}
+.nav-cmd-btn{display:flex;align-items:center;gap:6px;width:100%;padding:5px 8px;border-radius:var(--r);font-size:12px;color:var(--text2);text-align:left;transition:background .1s,color .1s}
+.nav-cmd-btn:hover{background:var(--bg3);color:var(--text1)}
+.nav-cmd-btn.active{color:var(--text0);font-weight:500}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--text3);flex-shrink:0}
+
+/* ─── Main area ─── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:44px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:8px;flex-shrink:0;background:var(--bg1)}
+.ttab{padding:5px 14px;border:1px solid transparent;border-radius:var(--r);font-size:12px;color:var(--text2);transition:all .15s;position:relative}
+.ttab:hover{color:var(--text1);border-color:var(--border2)}
+.ttab.active{color:var(--text0);background:var(--bg3);border-color:var(--border2)}
+.ttab-badge{position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center}
+.tsep{flex:1}
+.taction{padding:5px 12px;border:1px solid var(--border2);border-radius:var(--r);font-size:12px;color:var(--text1);transition:all .15s}
+.taction:hover{border-color:var(--accent);color:var(--text0)}
+
+/* ─── Panels ─── */
+.panels{flex:1;display:flex;overflow:hidden}
+.work-area{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.output-panel{width:300px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg1)}
+.output-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.output-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2)}
+.output-actions{display:flex;gap:6px}
+.output-actions button{font-size:11px;color:var(--text3);padding:2px 8px;border-radius:4px;transition:color .1s,background .1s}
+.output-actions button:hover{color:var(--text1);background:var(--bg3)}
+.output-list{flex:1;overflow-y:auto;padding:10px}
+.output-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--text3);font-size:12px;text-align:center;padding:20px}
+.output-empty svg{opacity:.3}
+
+/* ─── Output items ─── */
+.out-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:8px;transition:border-color .15s}
+.out-item:hover{border-color:var(--border2)}
+.out-img-thumb{width:100%;max-height:140px;object-fit:contain;background:var(--bg3);display:block;cursor:zoom-in}
+.out-media-thumb{width:100%;height:80px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--text3)}
+.out-meta{padding:8px 10px}
+.out-name{font-size:12px;font-weight:500;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.out-size{font-size:11px;color:var(--text2);margin-top:2px}
+.out-actions-row{display:flex;gap:5px;margin-top:8px}
+.out-btn{flex:1;padding:5px 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);font-size:11px;color:var(--text1);text-align:center;transition:background .1s,color .1s;white-space:nowrap}
+.out-btn:hover{background:var(--bg4);color:var(--text0)}
+a.out-btn{display:block}
+
+/* ─── Command panel ─── */
+.cmd-panel{padding:24px 28px;max-width:860px;width:100%}
+.cmd-header{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:22px}
+.cmd-header-left{display:flex;align-items:flex-start;gap:14px}
+.cmd-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.cmd-title{font-size:17px;font-weight:600;color:var(--text0);margin-bottom:3px}
+.cmd-desc{font-size:12px;color:var(--text2)}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-success{background:#0e3320;color:var(--success)}
+.badge-error{background:#3a1111;color:var(--error)}
+.badge-running{background:#0f2545;color:var(--accent)}
+
+/* ─── Form sections ─── */
+.cmd-section{margin-bottom:20px}
+.section-label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:8px}
+
+/* ─── Dropzone ─── */
+.dropzone{border:1.5px dashed var(--border2);border-radius:var(--rl);padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--bg1);position:relative;min-height:110px;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.dropzone:hover,.dropzone.drag-over{border-color:var(--accent);background:var(--bg2)}
+.dropzone.has-files{border-style:solid;padding:14px;align-items:flex-start;flex-direction:column;cursor:default}
+.dropzone input[type=file]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.dropzone.has-files input[type=file]{display:none}
+.drop-icon{font-size:28px;margin-bottom:8px;opacity:.5}
+.drop-cta{font-size:14px;color:var(--text1);margin-bottom:4px;font-weight:500}
+.drop-hint{font-size:11px;color:var(--text3)}
+.file-list{display:flex;flex-direction:column;gap:6px;width:100%}
+.file-chip{display:flex;align-items:center;gap:10px;background:var(--bg3);border-radius:var(--r);padding:8px 10px}
+.file-chip-thumb{width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0}
+.file-chip-icon{width:36px;height:36px;border-radius:4px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--text2)}
+.file-chip-info{flex:1;min-width:0}
+.file-chip-name{font-size:12px;font-weight:500;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-chip-size{font-size:11px;color:var(--text2);margin-top:1px}
+.file-chip-remove{flex-shrink:0;color:var(--text3);font-size:16px;padding:0 4px;transition:color .1s}
+.file-chip-remove:hover{color:var(--error)}
+.add-more-btn{margin-top:8px;padding:7px 12px;border:1px dashed var(--border2);border-radius:var(--r);font-size:12px;color:var(--text2);width:100%;position:relative;transition:border-color .15s,color .15s;text-align:center}
+.add-more-btn:hover{border-color:var(--accent);color:var(--text0)}
+.add-more-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* ─── Options grid ─── */
+.options-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.option-field{display:flex;flex-direction:column;gap:6px}
+.option-label{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px}
+.option-label .req{color:var(--error);font-size:14px;line-height:1}
+.option-label .unit{margin-left:auto;color:var(--text3);font-size:10px}
+.form-input,.form-select{width:100%;padding:8px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--text0);font-size:12px;outline:none;transition:border-color .15s}
+.form-input:focus,.form-select:focus{border-color:var(--accent)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23707070'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.form-select option{background:#1e1e1e}
+.range-row{display:flex;align-items:center;gap:10px}
+.form-range{flex:1;accent-color:var(--accent);cursor:pointer;height:4px}
+.range-val{font-family:var(--mono);font-size:12px;color:var(--text1);min-width:42px;text-align:right}
+.toggle{display:inline-flex;cursor:pointer;user-select:none}
+.toggle input{display:none}
+.toggle-track{width:36px;height:20px;background:var(--bg4);border-radius:20px;position:relative;transition:background .2s}
+.toggle-track::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--text2);transition:transform .2s,background .2s}
+.toggle input:checked~.toggle-track{background:var(--accent)}
+.toggle input:checked~.toggle-track::after{transform:translateX(16px);background:#fff}
+
+/* ─── CLI preview ─── */
+.cli-preview{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:10px}
+.cli-preview code{flex:1;font-family:var(--mono);font-size:12px;color:#7ec8e3;word-break:break-all}
+.copy-btn{border:1px solid var(--border2);border-radius:var(--r);padding:4px 9px;font-size:13px;color:var(--text2);flex-shrink:0;transition:border-color .1s,color .1s}
+.copy-btn:hover{border-color:var(--accent);color:var(--text0)}
+
+/* ─── Run / stop ─── */
+.run-row{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.run-btn{padding:10px 24px;border-radius:var(--r);font-size:13px;font-weight:600;color:#fff;transition:opacity .15s,transform .1s;letter-spacing:.01em}
+.run-btn:hover:not(:disabled){opacity:.85}
+.run-btn:active:not(:disabled){transform:scale(.98)}
+.run-btn:disabled{opacity:.35;cursor:not-allowed}
+.run-btn-kill{background:var(--error)!important}
+.run-hint{font-size:12px;color:var(--text3)}
+
+/* ─── Progress bar ─── */
+.progress-bar-wrap{margin-bottom:14px;display:none}
+.progress-bar-wrap.visible{display:block}
+.progress-bar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .4s}
+.progress-label{font-size:11px;color:var(--text2);margin-top:5px}
+
+/* ─── Logs ─── */
+.log-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.log-clear-btn{border:1px solid var(--border);border-radius:var(--r);padding:3px 10px;font-size:11px;color:var(--text2);transition:border-color .1s,color .1s}
+.log-clear-btn:hover{border-color:var(--border2);color:var(--text1)}
+.log-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;font-family:var(--mono);font-size:12px;max-height:240px;overflow-y:auto;scroll-behavior:smooth}
+.log-line{margin-bottom:2px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.log-info{color:#b0b0b0}.log-success{color:var(--success)}.log-error{color:var(--error)}.log-warn{color:var(--warn)}.log-dim{color:var(--text3)}
+.log-cursor{display:inline-block;width:8px;height:14px;background:var(--accent);animation:blink 1s step-end infinite;vertical-align:middle}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ─── Plugins page ─── */
+.plugins-page{padding:28px;max-width:900px}
+.page-title{font-size:20px;font-weight:600;margin-bottom:4px;color:var(--text0)}
+.page-desc{color:var(--text2);font-size:13px;margin-bottom:32px}
+.plugins-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:14px}
+.plugins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:32px}
+.plugin-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--rl);padding:16px;transition:border-color .15s}
+.plugin-card:hover{border-color:var(--border2)}
+.plugin-card.soon{opacity:.65}
+.plugin-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.plugin-icon-box{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.plugin-icon-box.soon{background:var(--bg3)!important;color:var(--text3)!important}
+.badge-installed{background:#0e3320;color:var(--success);font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
+.badge-soon{background:var(--bg3);color:var(--text2);font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
+.plugin-pkg{font-size:12px;font-weight:600;color:var(--text0);margin-bottom:4px;font-family:var(--mono)}
+.plugin-desc{font-size:12px;color:var(--text2);margin-bottom:6px;line-height:1.5}
+.plugin-cmds{font-size:11px;color:var(--text3)}
+
+/* ─── Preview modal ─── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:1000;animation:fadeIn .15s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-box{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--rl);max-width:90vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;min-width:320px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-title{font-size:13px;font-weight:500;color:var(--text0);max-width:400px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modal-close{color:var(--text2);font-size:18px;padding:0 4px;transition:color .1s}.modal-close:hover{color:var(--text0)}
+.modal-body{flex:1;overflow:auto;padding:16px;display:flex;align-items:center;justify-content:center;min-height:200px}
+.modal-body img{max-width:80vw;max-height:75vh;object-fit:contain;border-radius:4px}
+.modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+.modal-btn{padding:6px 14px;border-radius:var(--r);font-size:12px;font-weight:500;transition:opacity .15s}
+.modal-btn-primary{background:var(--accent);color:#fff}.modal-btn-primary:hover{opacity:.85}
+.modal-btn-sec{border:1px solid var(--border2);color:var(--text1)}.modal-btn-sec:hover{border-color:var(--accent);color:var(--text0)}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--bg4)}
+
+/* ─── Spinner ─── */
+.spinner{width:14px;height:14px;border:2px solid var(--bg3);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">M</div>
+      <span class="brand-name">MediaProc</span>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <span>@mediaproc/gui</span><span>v1.0.0</span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Top bar -->
+    <div class="topbar">
+      <button class="ttab active" id="tab-command" onclick="switchTab('command')">Command</button>
+      <button class="ttab" id="tab-output" onclick="switchTab('output')">
+        Output <span class="ttab-badge" id="output-count" style="display:none">0</span>
+      </button>
+      <button class="ttab" id="tab-plugins" onclick="switchTab('plugins')">Plugins</button>
+      <div class="tsep"></div>
+      <button class="taction" id="dl-all-btn" onclick="downloadAll()" style="display:none">⬇ Download All</button>
+      <button class="taction" onclick="clearAll()" title="Clear all uploads and outputs">🗑 Clear All</button>
+    </div>
+
+    <!-- Panels -->
+    <div class="panels" id="panels">
+      <!-- Work area -->
+      <div class="work-area" id="work-area">
+        <div id="command-view"></div>
+        <div id="plugins-view" style="display:none"></div>
+      </div>
+
+      <!-- Output panel (always visible alongside command) -->
+      <div class="output-panel" id="output-panel">
+        <div class="output-header">
+          <span class="output-title">Output files</span>
+          <div class="output-actions">
+            <button onclick="downloadAll()" title="Download all as ZIP">⬇ All</button>
+            <button onclick="clearOutputs()">Clear</button>
+          </div>
+        </div>
+        <div class="output-list" id="output-list">
+          <div class="output-empty">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+            </svg>
+            <div>Processed files appear here</div>
+            <div style="font-size:11px;color:var(--text3)">Upload files and run a command</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview modal -->
+<div id="preview-modal" style="display:none" onclick="if(event.target===this)closePreview()">
+  <div class="modal-overlay" onclick="if(event.target===this)closePreview()">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title" id="preview-title"></span>
+        <button class="modal-close" onclick="closePreview()">✕</button>
+      </div>
+      <div class="modal-body" id="preview-body"></div>
+      <div class="modal-footer">
+        <a class="modal-btn modal-btn-primary" id="preview-dl" download>⬇ Download</a>
+        <button class="modal-btn modal-btn-sec" onclick="closePreview()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// Plugin / command definitions
+// ════════════════════════════════════════════════════════════
+const PLUGINS = [
+  { id:'image', label:'Image', desc:'Resize, convert, compress & filter',
+    pkg:'@mediaproc/image', color:'#185FA5', bg:'#1a2f44',
+    commands:[
+      { name:'resize',  icon:'⤢', desc:'Resize to specific dimensions', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'],
+        opts:[
+          {flag:'--width',  label:'Width',       type:'number', ph:'1920', unit:'px'},
+          {flag:'--height', label:'Height',      type:'number', ph:'1080', unit:'px'},
+          {flag:'--fit',    label:'Fit mode',    type:'select', choices:['cover','contain','fill','inside','outside'], def:'cover'},
+          {flag:'--position',label:'Position',   type:'select', choices:['center','top','bottom','left','right'], def:'center'},
+          {flag:'--background',label:'Background',type:'text',  ph:'#ffffff'},
+        ]},
+      { name:'convert', icon:'⇄', desc:'Convert to a different format', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'],
+        opts:[
+          {flag:'--format',  label:'Output format', type:'select', choices:['webp','jpg','png','avif','tiff'], req:true},
+          {flag:'--quality', label:'Quality',        type:'range',  min:1, max:100, def:85, unit:'%'},
+        ]},
+      { name:'compress', icon:'⊟', desc:'Reduce file size', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','tiff','bmp'],
+        opts:[
+          {flag:'--quality', label:'Quality', type:'range', min:1, max:100, def:75, unit:'%'},
+          {flag:'--lossy',   label:'Lossy mode', type:'toggle', def:false},
+        ]},
+      { name:'crop', icon:'✂', desc:'Crop to specified dimensions', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'],
+        opts:[
+          {flag:'--width',  label:'Crop width',  type:'number', ph:'500',  unit:'px', req:true},
+          {flag:'--height', label:'Crop height', type:'number', ph:'500',  unit:'px', req:true},
+          {flag:'--left',   label:'Left offset', type:'number', ph:'0',    unit:'px', def:0},
+          {flag:'--top',    label:'Top offset',  type:'number', ph:'0',    unit:'px', def:0},
+        ]},
+      { name:'rotate', icon:'↻', desc:'Rotate by angle', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'],
+        opts:[
+          {flag:'--angle',      label:'Angle',      type:'select', choices:['90','180','270','-90'], req:true},
+          {flag:'--background', label:'Background', type:'text',   ph:'#ffffff'},
+        ]},
+      { name:'flip',      icon:'⇅', desc:'Flip vertically',    multi:true, exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'], opts:[] },
+      { name:'flop',      icon:'⇆', desc:'Mirror horizontally', multi:true, exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'], opts:[] },
+      { name:'blur', icon:'◎', desc:'Apply Gaussian blur', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'],
+        opts:[{flag:'--sigma', label:'Blur sigma', type:'range', min:0.3, max:30, step:0.1, def:3, unit:'σ'}]},
+      { name:'sharpen', icon:'◈', desc:'Sharpen image details', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'],
+        opts:[{flag:'--sigma', label:'Sharpen sigma', type:'range', min:0.3, max:10, step:0.1, def:1, unit:'σ'}]},
+      { name:'grayscale', icon:'◑', desc:'Convert to grayscale', multi:true, exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'], opts:[] },
+      { name:'tint', icon:'◐', desc:'Apply a color tint', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'],
+        opts:[{flag:'--color', label:'Tint color (hex)', type:'text', ph:'#ff6600', req:true}]},
+      { name:'watermark', icon:'©', desc:'Overlay text watermark', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'],
+        opts:[
+          {flag:'--text',    label:'Watermark text', type:'text',  ph:'© 2026', req:true},
+          {flag:'--opacity', label:'Opacity',        type:'range', min:0, max:100, def:50, unit:'%'},
+          {flag:'--size',    label:'Font size',      type:'number',ph:'36', def:36, unit:'px'},
+          {flag:'--color',   label:'Text color',     type:'text',  ph:'#ffffff', def:'#ffffff'},
+        ]},
+      { name:'thumbnail', icon:'▣', desc:'Generate square thumbnail', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'],
+        opts:[{flag:'--size', label:'Size', type:'select', choices:['64','128','256','512'], def:'256', unit:'px'}]},
+      { name:'optimize', icon:'⚡', desc:'Optimize for web delivery', multi:true,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'],
+        opts:[
+          {flag:'--quality', label:'Quality',       type:'range',  min:1, max:100, def:80, unit:'%'},
+          {flag:'--format',  label:'Target format', type:'select', choices:['webp','avif','original'], def:'webp'},
+        ]},
+      { name:'info', icon:'ℹ', desc:'Show image metadata & stats', multi:false,
+        exts:['jpg','jpeg','png','webp','avif','gif','tiff','bmp'], opts:[] },
+    ]},
+
+  { id:'video', label:'Video', desc:'Compress, transcode, trim & more',
+    pkg:'@mediaproc/video', color:'#993C1D', bg:'#3a1a0d',
+    commands:[
+      { name:'compress', icon:'⊟', desc:'Compress video file size', multi:false,
+        exts:['mp4','avi','mov','mkv','webm','flv','wmv','m4v'],
+        opts:[
+          {flag:'--quality', label:'Quality preset', type:'select', choices:['high','medium','low','extreme'], def:'medium'},
+          {flag:'--codec',   label:'Codec',          type:'select', choices:['h264','h265','vp9'], def:'h264'},
+          {flag:'--format',  label:'Output format',  type:'select', choices:['mp4','webm','mkv'], def:'mp4'},
+          {flag:'--crf',     label:'CRF value',      type:'range',  min:0, max:51, def:23},
+          {flag:'--preset',  label:'Speed preset',   type:'select', choices:['ultrafast','fast','medium','slow','veryslow'], def:'medium'},
+        ]},
+      { name:'transcode', icon:'⇄', desc:'Convert format/codec', multi:false,
+        exts:['mp4','avi','mov','mkv','webm','flv','wmv','m4v'],
+        opts:[
+          {flag:'--format',      label:'Output format', type:'select', choices:['mp4','webm','mkv','avi','mov'], req:true},
+          {flag:'--codec',       label:'Video codec',   type:'select', choices:['h264','h265','vp9','av1','copy']},
+          {flag:'--audio-codec', label:'Audio codec',   type:'select', choices:['aac','mp3','opus','copy'], def:'aac'},
+        ]},
+      { name:'trim', icon:'✂', desc:'Cut a segment from video', multi:false,
+        exts:['mp4','avi','mov','mkv','webm','flv','wmv','m4v'],
+        opts:[
+          {flag:'--start', label:'Start time', type:'text', ph:'00:00:10', req:true},
+          {flag:'--end',   label:'End time',   type:'text', ph:'00:01:00', req:true},
+        ]},
+      { name:'resize', icon:'⤢', desc:'Scale to preset resolution', multi:false,
+        exts:['mp4','avi','mov','mkv','webm','flv','wmv','m4v'],
+        opts:[
+          {flag:'--preset', label:'Resolution', type:'select', choices:['4k','1440p','1080p','720p','480p','360p'], def:'1080p', req:true},
+          {flag:'--codec',  label:'Codec',      type:'select', choices:['h264','h265','copy'], def:'h264'},
+        ]},
+      { name:'merge', icon:'+', desc:'Concatenate multiple videos', multi:true,
+        exts:['mp4','avi','mov','mkv','webm'],
+        opts:[
+          {flag:'--format', label:'Output format', type:'select', choices:['mp4','mkv','webm'], def:'mp4'},
+          {flag:'--codec',  label:'Codec',         type:'select', choices:['h264','h265','copy'], def:'copy'},
+        ]},
+      { name:'extract', icon:'↯', desc:'Extract audio track from video', multi:false,
+        exts:['mp4','avi','mov','mkv','webm','flv','wmv','m4v'],
+        opts:[
+          {flag:'--format',  label:'Audio format', type:'select', choices:['mp3','aac','flac','wav','ogg'], def:'mp3', req:true},
+          {flag:'--bitrate', label:'Bitrate',       type:'select', choices:['128k','192k','256k','320k'], def:'192k'},
+        ]},
+      { name:'convert', icon:'⇌', desc:'Convert container format', multi:false,
+        exts:['mp4','avi','mov','mkv','webm','flv','wmv','m4v'],
+        opts:[
+          {flag:'--format', label:'Output format', type:'select', choices:['mp4','webm','mkv','avi','mov'], req:true},
+          {flag:'--codec',  label:'Codec',         type:'select', choices:['h264','h265','vp9','copy'], def:'copy'},
+        ]},
+      { name:'metadata', icon:'ℹ', desc:'View detailed video metadata', multi:false,
+        exts:['mp4','avi','mov','mkv','webm','flv','wmv','m4v'], opts:[] },
+    ]},
+
+  { id:'audio', label:'Audio', desc:'Convert, normalize, trim & more',
+    pkg:'@mediaproc/audio', color:'#0F6E56', bg:'#0d2e24',
+    commands:[
+      { name:'convert', icon:'⇄', desc:'Convert to another format', multi:true,
+        exts:['mp3','wav','aac','flac','ogg','m4a','wma','opus'],
+        opts:[
+          {flag:'--format',  label:'Output format', type:'select', choices:['mp3','wav','aac','flac','ogg','opus'], req:true},
+          {flag:'--bitrate', label:'Bitrate',        type:'select', choices:['64k','128k','192k','256k','320k'], def:'192k'},
+        ]},
+      { name:'normalize', icon:'≈', desc:'Normalize loudness (EBU R128)', multi:true,
+        exts:['mp3','wav','aac','flac','ogg','m4a','wma','opus'],
+        opts:[
+          {flag:'--target', label:'Target loudness', type:'range', min:-30, max:-5, def:-16, unit:'LUFS'},
+          {flag:'--peak',   label:'True peak limit',  type:'range', min:-3, max:0, def:-1, step:0.1, unit:'dBTP'},
+        ]},
+      { name:'trim', icon:'✂', desc:'Cut a segment from audio', multi:false,
+        exts:['mp3','wav','aac','flac','ogg','m4a','wma','opus'],
+        opts:[
+          {flag:'--start',    label:'Start (seconds)',    type:'number', ph:'0',  req:true},
+          {flag:'--duration', label:'Duration (seconds)', type:'number', ph:'30'},
+        ]},
+      { name:'merge', icon:'+', desc:'Concatenate audio files', multi:true,
+        exts:['mp3','wav','aac','flac','ogg','m4a'],
+        opts:[
+          {flag:'--format',    label:'Output format', type:'select', choices:['mp3','wav','flac','aac','ogg'], def:'mp3'},
+          {flag:'--crossfade', label:'Crossfade (sec)', type:'number', ph:'0', def:0},
+        ]},
+      { name:'extract', icon:'↯', desc:'Extract audio from video', multi:false,
+        exts:['mp4','avi','mov','mkv','webm','m4v'],
+        opts:[
+          {flag:'--format',  label:'Audio format', type:'select', choices:['mp3','wav','flac','aac','ogg'], def:'mp3', req:true},
+          {flag:'--bitrate', label:'Bitrate',       type:'select', choices:['128k','192k','256k','320k'], def:'192k'},
+        ]},
+      { name:'metadata', icon:'ℹ', desc:'View & edit audio metadata', multi:false,
+        exts:['mp3','wav','aac','flac','ogg','m4a'], opts:[
+          {flag:'--set-title',  label:'Set title',  type:'text', ph:'Song title'},
+          {flag:'--set-artist', label:'Set artist', type:'text', ph:'Artist name'},
+          {flag:'--set-album',  label:'Set album',  type:'text', ph:'Album name'},
+        ]},
+    ]},
+
+  { id:'pipeline', label:'Pipeline', desc:'Run YAML/JSON workflow automation',
+    pkg:'@mediaproc/pipeline', color:'#534AB7', bg:'#1e1a44',
+    commands:[
+      { name:'run', icon:'▶', desc:'Execute a pipeline file', multi:false,
+        exts:['yaml','yml','json'],
+        opts:[
+          {flag:'--dry-run', label:'Dry run (preview only)', type:'toggle', def:false},
+          {flag:'--verbose', label:'Verbose output',         type:'toggle', def:false},
+        ]},
+      { name:'validate', icon:'✓', desc:'Validate pipeline without running', multi:false, exts:['yaml','yml','json'], opts:[] },
+      { name:'explain',  icon:'?', desc:'Explain what the pipeline will do',  multi:false,
+        exts:['yaml','yml','json'],
+        opts:[{flag:'--format', label:'Output format', type:'select', choices:['human','verbose','json'], def:'human'}]},
+    ]},
+];
+
+const COMING_SOON = [
+  {id:'document',  label:'Document',  desc:'PDF, DOCX, Markdown processing',         eta:'Q2 2026'},
+  {id:'animation', label:'Animation', desc:'GIF/Lottie optimization',                eta:'Q2 2026'},
+  {id:'metadata',  label:'Metadata',  desc:'Inspect & strip media metadata',          eta:'Q2 2026'},
+  {id:'3d',        label:'3D',        desc:'3D model processing via glTF',            eta:'Q3 2026'},
+  {id:'stream',    label:'Stream',    desc:'HLS/DASH packaging & encryption',         eta:'Q3 2026'},
+  {id:'ai',        label:'AI',        desc:'Face blur, captioning, BG removal',       eta:'Q3 2026'},
+];
+
+// ════════════════════════════════════════════════════════════
+// State
+// ════════════════════════════════════════════════════════════
+let state = {
+  pluginId: 'image',
+  commandName: 'resize',
+  uploadedFiles: [],    // [{id, name, ext, size, path, dataUrl?}]
+  values: {},
+  logs: [],
+  running: false,
+  lastResult: null,
+  outputs: [],          // [{id, name, size, type, mime, downloadUrl}]
+  logId: 0,
+  tab: 'command',
+};
+
+// ════════════════════════════════════════════════════════════
+// Helpers
+// ════════════════════════════════════════════════════════════
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(1)+' MB'}
+function getPlugin(id){return PLUGINS.find(p=>p.id===id)}
+function getCommand(p,n){return p?.commands.find(c=>c.name===n)}
+function initValues(cmd){const v={};(cmd?.opts||[]).forEach(o=>{if(o.def!==undefined)v[o.flag]=o.def});return v}
+function addLog(type,text){state.logs.push({type,text,id:state.logId++})}
+
+function buildCliString(){
+  const p=getPlugin(state.pluginId), c=getCommand(p,state.commandName);
+  if(!p||!c)return '';
+  const parts=['mediaproc',p.id,c.name,...state.uploadedFiles.map(f=>f.name)];
+  Object.entries(state.values).forEach(([k,v])=>{
+    if(v===''||v===undefined||v===null)return;
+    if(typeof v==='boolean'){if(v)parts.push(k);}else parts.push(k,String(v));
+  });
+  return parts.join(' ');
+}
+
+// ════════════════════════════════════════════════════════════
+// Navigation
+// ════════════════════════════════════════════════════════════
+function navigate(pluginId, cmdName){
+  const p=getPlugin(pluginId), c=getCommand(p, cmdName||p?.commands[0]?.name);
+  state.pluginId=pluginId;
+  state.commandName=c?.name||'';
+  state.uploadedFiles=[];
+  state.logs=[];
+  state.lastResult=null;
+  state.values=initValues(c);
+  switchTab('command');
+  renderSidebar();
+  renderCommandPanel();
+}
+
+function switchTab(t){
+  state.tab=t;
+  ['command','output','plugins'].forEach(x=>{
+    $('tab-'+x)?.classList.toggle('active', x===t);
+  });
+  const wa=$('work-area');
+  $('command-view').style.display = (t==='command'||t==='output') ? '' : 'none';
+  $('plugins-view').style.display = t==='plugins' ? '' : 'none';
+  $('output-panel').style.display = (t==='command'||t==='output') ? 'flex' : 'none';
+  if(t==='plugins') renderPluginsPage();
+}
+
+// ════════════════════════════════════════════════════════════
+// File upload
+// ════════════════════════════════════════════════════════════
+async function uploadFiles(fileList, replace=true){
+  const p=getPlugin(state.pluginId), c=getCommand(p,state.commandName);
+  const files=Array.from(fileList);
+  if(!files.length)return;
+
+  const fd=new FormData();
+  files.forEach(f=>fd.append('files',f));
+
+  // Optimistic preview for images
+  const previews={};
+  for(const f of files){
+    if(f.type.startsWith('image/')){
+      previews[f.name] = await new Promise(res=>{
+        const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);
+      });
+    }
+  }
+
+  try{
+    const resp=await fetch('/api/upload',{method:'POST',body:fd});
+    const data=await resp.json();
+    const enriched=data.files.map(f=>({...f, dataUrl: previews[f.name]||null}));
+    if(replace||!c?.multi) state.uploadedFiles=enriched;
+    else state.uploadedFiles=[...state.uploadedFiles,...enriched];
+    renderCommandPanel();
+  }catch(e){
+    addLog('error','Upload failed: '+e.message);
+    renderCommandPanel();
+  }
+}
+
+function removeFile(idx){
+  state.uploadedFiles.splice(idx,1);
+  renderCommandPanel();
+}
+
+// ════════════════════════════════════════════════════════════
+// Run command
+// ════════════════════════════════════════════════════════════
+async function runCommand(){
+  if(state.running||!state.uploadedFiles.length)return;
+  state.running=true; state.lastResult=null; state.logs=[];
+  renderCommandPanel();
+
+  const p=getPlugin(state.pluginId), c=getCommand(p,state.commandName);
+  addLog('dim','─'.repeat(44));
+  addLog('info','$ '+buildCliString());
+  addLog('dim','─'.repeat(44));
+  renderLogs();
+
+  try{
+    const payload={files:state.uploadedFiles, options:state.values};
+    const url=`/api/${p.id}/${c.name}`;
+    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+
+    data.logs.forEach(l=>addLog(l.type,l.text));
+    if(data.outputs?.length){
+      state.outputs=[...state.outputs,...data.outputs];
+      renderOutputList();
+    }
+    state.lastResult = data.logs.some(l=>l.type==='error') ? 'error' : 'success';
+  }catch(e){
+    addLog('error','Request failed: '+e.message);
+    state.lastResult='error';
+  }
+
+  state.running=false;
+  addLog(state.lastResult==='success'?'success':'error',
+    state.lastResult==='success'?'✓ Completed successfully':'✗ Command failed');
+  renderCommandPanel();
+}
+
+async function killCommand(){
+  state.running=false;
+  addLog('warn','⚠ Stopped by user');
+  renderCommandPanel();
+}
+
+// ════════════════════════════════════════════════════════════
+// Downloads
+// ════════════════════════════════════════════════════════════
+function downloadOutput(out){
+  const a=document.createElement('a');
+  a.href=out.downloadUrl;
+  a.download=out.name;
+  a.click();
+}
+
+function downloadAll(){
+  if(!state.outputs.length)return;
+  window.location='/api/download-all';
+}
+
+async function clearOutputs(){
+  state.outputs=[];
+  updateOutputCount();
+  renderOutputList();
+}
+
+async function clearAll(){
+  state.outputs=[];
+  state.uploadedFiles=[];
+  state.logs=[];
+  state.lastResult=null;
+  await fetch('/api/cleanup',{method:'POST'});
+  renderCommandPanel();
+  renderOutputList();
+}
+
+// ════════════════════════════════════════════════════════════
+// Preview modal
+// ════════════════════════════════════════════════════════════
+function openPreview(out){
+  $('preview-title').textContent=out.name;
+  const body=$('preview-body');
+  const dlLink=$('preview-dl');
+  dlLink.href=out.downloadUrl;
+  dlLink.download=out.name;
+
+  if(out.type==='image'){
+    body.innerHTML=`<img src="${out.downloadUrl}" alt="${esc(out.name)}" style="max-width:80vw;max-height:72vh;object-fit:contain;border-radius:4px">`;
+  } else if(out.type==='video'){
+    body.innerHTML=`<video controls style="max-width:80vw;max-height:72vh;border-radius:4px" src="${out.downloadUrl}"></video>`;
+  } else if(out.type==='audio'){
+    body.innerHTML=`<div style="padding:20px;text-align:center"><div style="font-size:48px;margin-bottom:12px">♪</div><div style="font-size:13px;color:var(--text1);margin-bottom:16px">${esc(out.name)}</div><audio controls src="${out.downloadUrl}" style="width:300px"></audio></div>`;
+  } else {
+    body.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text1)"><div style="font-size:48px;margin-bottom:12px">📄</div><div>${esc(out.name)}</div><div style="color:var(--text2);margin-top:8px">${fmtSize(out.size)}</div></div>`;
+  }
+  $('preview-modal').style.display='flex';
+}
+function closePreview(){$('preview-modal').style.display='none';$('preview-body').innerHTML=''}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePreview()});
+
+// ════════════════════════════════════════════════════════════
+// Render: Sidebar
+// ════════════════════════════════════════════════════════════
+function renderSidebar(){
+  let h='<span class="nav-section">Plugins</span>';
+  PLUGINS.forEach(pl=>{
+    const isActive=state.pluginId===pl.id && state.tab==='command';
+    h+=`<div class="nav-plugin">
+      <button class="nav-plugin-btn ${isActive?'active':''}" onclick="navigate('${pl.id}')">
+        <span class="nav-dot" style="background:${pl.color}"></span>${pl.label}
+      </button>`;
+    if(isActive){
+      h+='<div class="nav-commands">';
+      pl.commands.forEach(cmd=>{
+        h+=`<button class="nav-cmd-btn ${state.commandName===cmd.name?'active':''}" onclick="navigate('${pl.id}','${cmd.name}')">
+          <span style="opacity:.7;font-size:11px">${cmd.icon}</span>${cmd.name}
+        </button>`;
+      });
+      h+='</div>';
+    }
+    h+='</div>';
+  });
+  h+='<span class="nav-section" style="margin-top:16px">System</span>';
+  h+=`<button class="nav-plugin-btn ${state.tab==='plugins'?'active':''}" onclick="switchTab('plugins')">
+    <span class="nav-dot" style="background:#555"></span>Manage plugins
+  </button>`;
+  $('sidebarNav').innerHTML=h;
+}
+
+// ════════════════════════════════════════════════════════════
+// Render: Command panel
+// ════════════════════════════════════════════════════════════
+function renderCommandPanel(){
+  const p=getPlugin(state.pluginId), c=getCommand(p,state.commandName);
+  if(!p||!c){$('command-view').innerHTML='';return}
+
+  const hasFiles=state.uploadedFiles.length>0;
+  const canRun=hasFiles&&!state.running;
+
+  // Badge
+  const badge = state.running ? '<span class="badge badge-running"><span class="spinner"></span>Running…</span>'
+    : state.lastResult==='success' ? '<span class="badge badge-success">✓ Done</span>'
+    : state.lastResult==='error'   ? '<span class="badge badge-error">✗ Failed</span>' : '';
+
+  // Dropzone
+  const extList=c.exts.map(e=>'.'+e).join(', ');
+  let dropContent='';
+  if(hasFiles){
+    dropContent='<div class="file-list">';
+    state.uploadedFiles.forEach((f,i)=>{
+      const isImg=f.dataUrl;
+      dropContent+=`<div class="file-chip">
+        ${isImg
+          ? `<img class="file-chip-thumb" src="${f.dataUrl}" alt="">`
+          : `<div class="file-chip-icon">${f.ext==='mp4'||f.ext==='mov'||f.ext==='mkv'||f.ext==='avi'||f.ext==='webm'?'▶':f.ext==='mp3'||f.ext==='wav'||f.ext==='flac'||f.ext==='ogg'||f.ext==='aac'?'♪':'📄'}</div>`}
+        <div class="file-chip-info">
+          <div class="file-chip-name" title="${esc(f.name)}">${esc(f.name)}</div>
+          <div class="file-chip-size">${fmtSize(f.size)}</div>
+        </div>
+        <button class="file-chip-remove" onclick="removeFile(${i})" title="Remove">✕</button>
+      </div>`;
+    });
+    dropContent+='</div>';
+    if(c.multi){
+      dropContent+=`<button class="add-more-btn">
+        <input type="file" multiple accept="${c.exts.map(e=>'.'+e).join(',')}" onchange="uploadFiles(this.files,false)">
+        + Add more files
+      </button>`;
+    }
+  } else {
+    dropContent=`
+      <div class="drop-icon">📂</div>
+      <div class="drop-cta">Drop files here or click to browse</div>
+      <div class="drop-hint">${extList}</div>`;
+  }
+
+  // Options
+  let optionsHtml='';
+  if(c.opts?.length){
+    optionsHtml=`<div class="cmd-section"><label class="section-label">Options</label><div class="options-grid">`;
+    c.opts.forEach(opt=>{
+      const val=state.values[opt.flag];
+      const cur=val!==undefined?val:(opt.def!==undefined?opt.def:'');
+      const rid='rv_'+opt.flag.replace(/[^a-z0-9]/gi,'_');
+      optionsHtml+=`<div class="option-field">
+        <label class="option-label">
+          ${esc(opt.label)}
+          ${opt.req?'<span class="req">*</span>':''}
+          ${opt.unit?`<span class="unit">${opt.unit}</span>`:''}
+        </label>`;
+
+      if(opt.type==='select'){
+        optionsHtml+=`<select class="form-select" onchange="setOpt('${opt.flag}',this.value)">
+          <option value="">— default —</option>
+          ${(opt.choices||[]).map(ch=>`<option value="${ch}" ${String(cur)===ch?'selected':''}>${ch}</option>`).join('')}
+        </select>`;
+      } else if(opt.type==='range'){
+        const step=opt.step||1;
+        const disp=typeof cur==='number'?cur.toFixed(step<1?1:0):cur;
+        optionsHtml+=`<div class="range-row">
+          <input type="range" class="form-range" min="${opt.min??0}" max="${opt.max??100}" step="${step}" value="${cur}"
+            oninput="setOpt('${opt.flag}',parseFloat(this.value));document.getElementById('${rid}').textContent=parseFloat(this.value).toFixed(${step<1?1:0})">
+          <span class="range-val" id="${rid}">${disp}</span>
+        </div>`;
+      } else if(opt.type==='toggle'){
+        optionsHtml+=`<label class="toggle">
+          <input type="checkbox" ${cur?'checked':''} onchange="setOpt('${opt.flag}',this.checked)">
+          <span class="toggle-track"></span>
+        </label>`;
+      } else {
+        optionsHtml+=`<input class="form-input" type="${opt.type==='number'?'number':'text'}"
+          placeholder="${esc(opt.ph||'')}" value="${esc(String(cur))}"
+          ${opt.min!==undefined?'min='+opt.min:''} ${opt.max!==undefined?'max='+opt.max:''}
+          oninput="setOpt('${opt.flag}',this.value)">`;
+      }
+      optionsHtml+='</div>';
+    });
+    optionsHtml+='</div></div>';
+  }
+
+  // Logs
+  const logsHtml=state.logs.length||state.running ? `
+    <div class="cmd-section">
+      <div class="log-header">
+        <label class="section-label" style="margin:0">Output log</label>
+        <button class="log-clear-btn" onclick="clearLogs()">Clear</button>
+      </div>
+      <div class="log-panel" id="log-panel">
+        ${state.logs.map(l=>`<div class="log-line log-${l.type}">${esc(l.text)}</div>`).join('')}
+        ${state.running?'<span class="log-cursor"></span>':''}
+      </div>
+    </div>` : '';
+
+  $('command-view').innerHTML=`
+  <div class="cmd-panel">
+    <!-- Header -->
+    <div class="cmd-header" style="border-color:${p.color}44">
+      <div class="cmd-header-left">
+        <span class="cmd-icon" style="background:${p.bg};color:${p.color}">${c.icon}</span>
+        <div>
+          <div class="cmd-title">${p.label} › <span style="color:${p.color}">${c.name}</span></div>
+          <div class="cmd-desc">${c.desc}</div>
+        </div>
+      </div>
+      <div>${badge}</div>
+    </div>
+
+    <!-- Files -->
+    <div class="cmd-section">
+      <label class="section-label">Input files${c.multi?' <span style="font-weight:400;text-transform:none;letter-spacing:0">(multiple allowed)</span>':''}</label>
+      <div class="dropzone ${hasFiles?'has-files':''}" id="dropzone" style="${hasFiles?'border-color:'+p.color:''}">
+        ${!hasFiles?`<input type="file" ${c.multi?'multiple':''} accept="${c.exts.map(e=>'.'+e).join(',')}" onchange="uploadFiles(this.files,true)">`:''}
+        ${dropContent}
+      </div>
+    </div>
+
+    ${optionsHtml}
+
+    <!-- CLI Preview -->
+    <div class="cmd-section">
+      <label class="section-label">Command preview</label>
+      <div class="cli-preview">
+        <code id="cli-preview-code">${esc(buildCliString())}</code>
+        <button class="copy-btn" onclick="copyCliString()" title="Copy command">⎘</button>
+      </div>
+    </div>
+
+    <!-- Run -->
+    <div class="run-row">
+      ${state.running
+        ? `<button class="run-btn run-btn-kill" onclick="killCommand()">■ Stop</button>`
+        : `<button class="run-btn" style="background:${p.color}" ${canRun?'':'disabled'} onclick="runCommand()">▶ Run ${c.name}</button>`}
+      ${!hasFiles?`<span class="run-hint">Upload or drop files to continue</span>`:''}
+    </div>
+
+    ${logsHtml}
+  </div>`;
+
+  // Drag & drop
+  setupDropzone();
+
+  // Scroll logs
+  const lp=$('log-panel');
+  if(lp) lp.scrollTop=lp.scrollHeight;
+}
+
+function renderLogs(){
+  const lp=$('log-panel');
+  if(!lp)return;
+  lp.innerHTML=state.logs.map(l=>`<div class="log-line log-${l.type}">${esc(l.text)}</div>`).join('');
+  if(state.running) lp.innerHTML+='<span class="log-cursor"></span>';
+  lp.scrollTop=lp.scrollHeight;
+}
+
+function setupDropzone(){
+  const dz=$('dropzone');
+  if(!dz||state.uploadedFiles.length)return;
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')},{once:false});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+  dz.addEventListener('drop',e=>{
+    e.preventDefault();dz.classList.remove('drag-over');
+    if(e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files,true);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// Render: Output list
+// ════════════════════════════════════════════════════════════
+function renderOutputList(){
+  updateOutputCount();
+  const list=$('output-list');
+  if(!state.outputs.length){
+    list.innerHTML=`<div class="output-empty">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+      </svg>
+      <div>Processed files appear here</div>
+      <div style="font-size:11px;color:var(--text3)">Upload files and run a command</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML=state.outputs.map((out,i)=>{
+    let thumb='';
+    if(out.type==='image'){
+      thumb=`<img class="out-img-thumb" src="${out.downloadUrl}" alt="${esc(out.name)}" onclick="openPreview(state.outputs[${i}])" loading="lazy">`;
+    } else if(out.type==='video'){
+      thumb=`<div class="out-media-thumb">🎬</div>`;
+    } else if(out.type==='audio'){
+      thumb=`<div class="out-media-thumb">🎵</div>`;
+    } else {
+      thumb=`<div class="out-media-thumb">📄</div>`;
+    }
+
+    return `<div class="out-item">
+      ${thumb}
+      <div class="out-meta">
+        <div class="out-name" title="${esc(out.name)}">${esc(out.name)}</div>
+        <div class="out-size">${fmtSize(out.size)}</div>
+        <div class="out-actions-row">
+          <a class="out-btn" href="${out.downloadUrl}" download="${esc(out.name)}">⬇ Download</a>
+          <button class="out-btn" onclick="openPreview(state.outputs[${i}])">👁 Preview</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateOutputCount(){
+  const n=state.outputs.length;
+  const badge=$('output-count');
+  if(badge){badge.textContent=n;badge.style.display=n?'':'none';}
+  $('dl-all-btn').style.display=n?'':'none';
+}
+
+// ════════════════════════════════════════════════════════════
+// Render: Plugins page
+// ════════════════════════════════════════════════════════════
+function renderPluginsPage(){
+  let h=`<div class="plugins-page">
+    <h1 class="page-title">Plugin manager</h1>
+    <p class="page-desc">Install and manage @mediaproc plugins</p>
+    <div class="plugins-section-title">Installed</div>
+    <div class="plugins-grid">`;
+  PLUGINS.forEach(p=>{
+    h+=`<div class="plugin-card">
+      <div class="plugin-card-top">
+        <div class="plugin-icon-box" style="background:${p.bg};color:${p.color}">${p.label.slice(0,3).toUpperCase()}</div>
+        <span class="badge-installed">Installed</span>
+      </div>
+      <div class="plugin-pkg">${p.pkg}</div>
+      <div class="plugin-desc">${p.desc}</div>
+      <div class="plugin-cmds">${p.commands.length} commands</div>
+    </div>`;
+  });
+  h+=`</div><div class="plugins-section-title">Coming soon</div><div class="plugins-grid">`;
+  COMING_SOON.forEach(p=>{
+    h+=`<div class="plugin-card soon">
+      <div class="plugin-card-top">
+        <div class="plugin-icon-box soon">${p.label.slice(0,3).toUpperCase()}</div>
+        <span class="badge-soon">${p.eta}</span>
+      </div>
+      <div class="plugin-pkg">@mediaproc/${p.id}</div>
+      <div class="plugin-desc">${p.desc}</div>
+    </div>`;
+  });
+  h+=`</div></div>`;
+  $('plugins-view').innerHTML=h;
+}
+
+// ════════════════════════════════════════════════════════════
+// UI helpers
+// ════════════════════════════════════════════════════════════
+function setOpt(flag,value){
+  state.values[flag]=value;
+  const el=$('cli-preview-code');
+  if(el)el.textContent=buildCliString();
+}
+
+function clearLogs(){state.logs=[];renderCommandPanel()}
+
+function copyCliString(){
+  try{navigator.clipboard.writeText(buildCliString())}catch(e){}
+  const btn=document.querySelector('.copy-btn');
+  if(btn){btn.textContent='✓';btn.style.color='var(--success)';setTimeout(()=>{btn.textContent='⎘';btn.style.color=''},1500)}
+}
+
+// ════════════════════════════════════════════════════════════
+// Init
+// ════════════════════════════════════════════════════════════
+renderSidebar();
+renderCommandPanel();
+renderOutputList();
+switchTab('command');
+</script>
+</body>
+</html>
